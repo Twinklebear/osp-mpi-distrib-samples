@@ -88,7 +88,9 @@ int main(int argc, char **argv) {
 	ospCommit(spheres);
 
 	// Create the model we'll place all our scene geometry into, representing
-	// the world to be rendered.
+	// the world to be rendered. If we don't need sort-last compositing to be
+	// performed (i.e. all our objects are opaque), we don't need to specify
+	// any regions to the model.
 	OSPModel model = ospNewModel();
 	ospAddGeometry(model, spheres);
 	ospCommit(model);
