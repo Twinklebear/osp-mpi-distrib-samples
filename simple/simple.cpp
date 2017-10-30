@@ -9,13 +9,16 @@
 #include <cstdio>
 #include <mpi.h>
 #include <ospray/ospray.h>
+#include <ospray/ospcommon/vec.h>
+
+using namespace ospcommon;
 
 struct Particle {
-	osp::vec3f pos;
+	vec3f pos;
 	int color_id;
 
 	Particle(float x, float y, float z)
-		: pos(osp::vec3f{x, y, z}), color_id(0)
+		: pos(vec3f{x, y, z}), color_id(0)
 	{}
 };
 
@@ -41,13 +44,10 @@ int main(int argc, char **argv) {
 	ospDeviceCommit(device);
 	ospSetCurrentDevice(device);
 
-	const std::array<float, 3> cam_pos = {0.0, 0.0, 9.0};
-	const std::array<float, 3> cam_up = {0.0, 1.0, 0.0};
-	const std::array<float, 3> cam_at = {0.0, 0.0, 0.0};
-	std::array<float, 3> cam_dir;
-	for (size_t i = 0; i < 3; ++i) {
-		cam_dir[i] = cam_at[i] - cam_pos[i];
-	}
+	const vec3f cam_pos(0, 0, 9);
+	const vec3f cam_up(0, 1, 0);
+	const vec3f cam_at(0, 0, 0);
+	const vec3f cam_dir = cam_at - cam_pos;
 
 	std::random_device rd;
 	std::mt19937 rng(rd());
@@ -99,9 +99,9 @@ int main(int argc, char **argv) {
 	const osp::vec2i img_size{1024, 1024};
 	OSPCamera camera = ospNewCamera("perspective");
 	ospSet1f(camera, "aspect", 1.0);
-	ospSet3fv(camera, "pos", cam_pos.data());
-	ospSet3fv(camera, "up", cam_up.data());
-	ospSet3fv(camera, "dir", cam_dir.data());
+	ospSet3fv(camera, "pos", &cam_pos.x);
+	ospSet3fv(camera, "up", &cam_up.x);
+	ospSet3fv(camera, "dir", &cam_dir.x);
 	ospCommit(camera);
 
 	// Setup the parameters for the renderer

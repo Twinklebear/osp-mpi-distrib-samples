@@ -8,4 +8,5 @@ find_package(MPI REQUIRED)
 include_directories(${OSPRAY_INCLUDE_DIRS} ${MPI_CXX_INCLUDE_PATH})
 
 add_subdirectory(simple)
+add_subdirectory(regions)
 
