@@ -19,16 +19,16 @@ struct Particle {
 
 	Particle(float x, float y, float z)
 		: pos(vec3f{x, y, z}), color_id(0)
-	{}
+		{}
 };
 
 void write_ppm(const std::string &file_name, const int width, const int height,
 		const uint32_t *img);
 
 int main(int argc, char **argv) {
-    int provided = 0;
-    MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
-    assert(provided == MPI_THREAD_MULTIPLE);
+	int provided = 0;
+	MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
+	assert(provided == MPI_THREAD_MULTIPLE);
 
 	int world_size, rank;
 	MPI_Comm_size(MPI_COMM_WORLD, &world_size);
@@ -75,9 +75,6 @@ int main(int argc, char **argv) {
 			atom_color.data(), OSP_DATA_SHARED_BUFFER);
 	ospCommit(color_data);
 
-	// For distributed rendering we must use the MPI raycaster
-	OSPRenderer renderer = ospNewRenderer("mpi_raycast");
-
 	// Create the sphere geometry that we'll use to represent our particles
 	OSPGeometry spheres = ospNewGeometry("spheres");
 	ospSetData(spheres, "spheres", sphere_data);
@@ -104,6 +101,8 @@ int main(int argc, char **argv) {
 	ospSet3fv(camera, "dir", &cam_dir.x);
 	ospCommit(camera);
 
+	// For distributed rendering we must use the MPI raycaster
+	OSPRenderer renderer = ospNewRenderer("mpi_raycast");
 	// Setup the parameters for the renderer
 	ospSet1i(renderer, "spp", 1);
 	ospSet1f(renderer, "bgColor", 1.f);

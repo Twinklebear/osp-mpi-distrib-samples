@@ -21,7 +21,7 @@ struct Particle {
 
 	Particle(float x, float y, float z)
 		: pos(vec3f{x, y, z}), color_id(0)
-	{}
+		{}
 };
 
 void write_ppm(const std::string &file_name, const int width, const int height,
@@ -32,9 +32,9 @@ void write_ppm(const std::string &file_name, const int width, const int height,
 vec3i compute_grid(int num);
 
 int main(int argc, char **argv) {
-    int provided = 0;
-    MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
-    assert(provided == MPI_THREAD_MULTIPLE);
+	int provided = 0;
+	MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
+	assert(provided == MPI_THREAD_MULTIPLE);
 
 	int world_size, rank;
 	MPI_Comm_size(MPI_COMM_WORLD, &world_size);
@@ -76,7 +76,7 @@ int main(int argc, char **argv) {
 
 	// Setup our piece of the volume data, each rank has some brick of
 	// volume data within the [0, 1] box
-    OSPVolume volume = ospNewVolume("block_bricked_volume");
+	OSPVolume volume = ospNewVolume("block_bricked_volume");
 	const vec3i volume_dims(64);
 	const vec3i grid = compute_grid(world_size);
 	const vec3i brick_id(rank % grid.x,
@@ -95,9 +95,6 @@ int main(int argc, char **argv) {
 			static_cast<unsigned char>(rank));
 	ospSetRegion(volume, volume_data.data(), osp::vec3i{0, 0, 0}, (osp::vec3i&)volume_dims);
 	ospCommit(volume);
-
-	// For distributed rendering we must use the MPI raycaster
-	OSPRenderer renderer = ospNewRenderer("mpi_raycast");
 
 	OSPModel model = ospNewModel();
 	ospAddVolume(model, volume);
@@ -131,6 +128,8 @@ int main(int argc, char **argv) {
 	ospSet3fv(camera, "dir", &cam_dir.x);
 	ospCommit(camera);
 
+	// For distributed rendering we must use the MPI raycaster
+	OSPRenderer renderer = ospNewRenderer("mpi_raycast");
 	// Setup the parameters for the renderer
 	ospSet1i(renderer, "spp", 1);
 	ospSet1f(renderer, "bgColor", 1.f);
