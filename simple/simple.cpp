@@ -28,7 +28,6 @@ void write_ppm(const std::string &file_name, const int width, const int height,
 int main(int argc, char **argv) {
 	int provided = 0;
 	MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
-	assert(provided == MPI_THREAD_MULTIPLE);
 
 	int world_size, rank;
 	MPI_Comm_size(MPI_COMM_WORLD, &world_size);

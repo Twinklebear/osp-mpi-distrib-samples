@@ -34,7 +34,6 @@ vec3i compute_grid(int num);
 int main(int argc, char **argv) {
 	int provided = 0;
 	MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
-	assert(provided == MPI_THREAD_MULTIPLE);
 
 	int world_size, rank;
 	MPI_Comm_size(MPI_COMM_WORLD, &world_size);
@@ -105,6 +104,48 @@ int main(int argc, char **argv) {
 	const box3f bounds(grid_origin, grid_origin + vec3f(volume_dims));
 	OSPData region_data = ospNewData(2, OSP_FLOAT3, &bounds);
 	ospSetData(model, "regions", region_data);
+
+	// Generate some particles within our region
+	std::random_device rd;
+	std::mt19937 rng(rd());
+	std::vector<Particle> atoms;
+	const float radius = 1.0;
+	{
+		std::uniform_real_distribution<float> pos_x(bounds.lower.x + radius, bounds.upper.x - radius);
+		std::uniform_real_distribution<float> pos_y(bounds.lower.y + radius, bounds.upper.y - radius);
+		std::uniform_real_distribution<float> pos_z(bounds.lower.z + radius, bounds.upper.z - radius);
+
+		// Randomly generate some spheres
+		for (size_t i = 0; i < 50; ++i) {
+			atoms.push_back(Particle(pos_x(rng), pos_y(rng), pos_z(rng)));
+		}
+	}
+	const std::array<float, 3> atom_color = {
+		static_cast<float>(rank) / world_size,
+		static_cast<float>(rank) / world_size,
+		static_cast<float>(rank) / world_size
+	};
+
+	// Make the OSPData which will refer to our particle and color data.
+	// The OSP_DATA_SHARED_BUFFER flag tells OSPRay not to share our buffer,
+	// instead of taking a copy.
+	OSPData sphere_data = ospNewData(atoms.size() * sizeof(Particle), OSP_CHAR,
+			atoms.data(), OSP_DATA_SHARED_BUFFER);
+	ospCommit(sphere_data);
+	OSPData color_data = ospNewData(1, OSP_FLOAT3,
+			atom_color.data(), OSP_DATA_SHARED_BUFFER);
+	ospCommit(color_data);
+
+	// Create the sphere geometry that we'll use to represent our particles
+	OSPGeometry spheres = ospNewGeometry("spheres");
+	ospSetData(spheres, "spheres", sphere_data);
+	ospSetData(spheres, "color", color_data);
+	ospSet1f(spheres, "radius", radius);
+	ospSet1i(spheres, "bytes_per_sphere", sizeof(Particle));
+	ospSet1i(spheres, "offset_colorID", sizeof(osp::vec3f));
+	ospCommit(spheres);
+	ospAddGeometry(model, spheres);
+
 	ospCommit(model);
 
 	// Position the camera based on the world bounds, which go from
