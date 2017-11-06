@@ -68,7 +68,8 @@ int main(int argc, char **argv) {
 		throw std::runtime_error("Failed to load OSPRay MPI module");
 	}
 
-	// Partition the world so we have 1 OSPRay rank on each node
+	// Determine how many ranks we have on each node, so we can assign one
+	// to be the OSPRay rank
 	MPI_Comm node_comm;
 	MPI_Comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, 0,
 			MPI_INFO_NULL, &node_comm);
@@ -108,6 +109,7 @@ int main(int argc, char **argv) {
 		}
 	}
 
+	// Partition the world so we have 1 OSPRay rank on each node
 	MPI_Comm partition_comm;
 	MPI_Comm_split(MPI_COMM_WORLD, is_ospray_rank, world_rank, &partition_comm);
 	if (is_ospray_rank) {
