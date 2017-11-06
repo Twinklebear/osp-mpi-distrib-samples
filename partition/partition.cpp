@@ -17,12 +17,12 @@ struct Particle {
 	vec3f pos;
 	int color_id;
 
-	Particle(float x, float y, float z)
-		: pos(vec3f{x, y, z}), color_id(0)
+	Particle(float x, float y, float z, int color_id)
+		: pos(vec3f{x, y, z}), color_id(color_id)
 	{}
 };
 
-void ospray_rendering_work(MPI_Comm partition_comm);
+void ospray_rendering_work(MPI_Comm partition_comm, std::vector<Particle> &collected_particles);
 void write_ppm(const std::string &file_name, const int width, const int height,
 		const uint32_t *img);
 
@@ -45,6 +45,7 @@ int main(int argc, char **argv) {
 	MPI_Comm_rank(node_comm, &node_rank);
 	MPI_Comm_size(node_comm, &node_size);
 
+	// The first rank on each node will be the OSPRay rank
 	int is_ospray_rank = 0;
 	if (node_size == world_size) {
 		if (world_rank == 0) {
@@ -54,17 +55,32 @@ int main(int argc, char **argv) {
 		is_ospray_rank = node_rank % 2 == 0 ? 1 : 0;
 	} else {
 		if (world_rank == 0) {
-			std::cout << "Multi-node run detected with " << node_size << "ranks per-node,"
+			std::cout << "Multi-node run detected with " << node_size << " ranks per-node,"
 				<< " configuring to run OSPRay on one rank per-node\n";
 		}
 		is_ospray_rank = node_rank == 0 ? 1 : 0;
 	}
 
-	// The first rank on each node will be the OSPRay rank
+	std::random_device rd;
+	std::mt19937 rng(rd());
+	std::vector<Particle> atoms;
+	std::uniform_real_distribution<float> pos(-3.0, 3.0);
+
+	// Randomly generate some spheres on each rank
+	for (size_t i = 0; i < 50; ++i) {
+		atoms.push_back(Particle(pos(rng), pos(rng), pos(rng), node_rank));
+	}
+	// Collect all particles to the rank responsible for rendering with OSPRay (rank 0 on each node)
+	for (int i = 1; i < node_size; ++i) {
+		if (node_rank == 0) {
+		} else {
+		}
+	}	
+
 	MPI_Comm partition_comm;
 	MPI_Comm_split(MPI_COMM_WORLD, is_ospray_rank, world_rank, &partition_comm);
 	if (is_ospray_rank) {
-		ospray_rendering_work(partition_comm);
+		ospray_rendering_work(partition_comm, atoms);
 	}
 	
 	MPI_Comm_free(&partition_comm);
@@ -74,7 +90,7 @@ int main(int argc, char **argv) {
 
 	return 0;
 }
-void ospray_rendering_work(MPI_Comm partition_comm) {
+void ospray_rendering_work(MPI_Comm partition_comm, std::vector<Particle> &collected_particles) {
 	int world_size, world_rank;
 	MPI_Comm_size(partition_comm, &world_size);
 	MPI_Comm_rank(partition_comm, &world_rank);
@@ -91,7 +107,7 @@ void ospray_rendering_work(MPI_Comm partition_comm) {
 
 	OSPDevice device = ospNewDevice("mpi_distributed");
 	ospDeviceSet1i(device, "masterRank", 0);
-	ospDeviceSetVoidPtr(device, "world_communicator", static_cast<void*>(&partition_comm));
+	ospDeviceSetVoidPtr(device, "worldCommunicator", static_cast<void*>(&partition_comm));
 	ospDeviceSetStatusFunc(device, [](const char *msg) { std::cout << msg << "\n"; });
 	ospDeviceCommit(device);
 	ospSetCurrentDevice(device);
@@ -101,16 +117,9 @@ void ospray_rendering_work(MPI_Comm partition_comm) {
 	const vec3f cam_at(0, 0, 0);
 	const vec3f cam_dir = cam_at - cam_pos;
 
-	std::random_device rd;
-	std::mt19937 rng(rd());
-	std::vector<Particle> atoms;
-	std::uniform_real_distribution<float> pos(-3.0, 3.0);
-
-	// Randomly generate some spheres
-	for (size_t i = 0; i < 50; ++i) {
-		atoms.push_back(Particle(pos(rng), pos(rng), pos(rng)));
-	}
-
+	// TODO: Generate node_size colors, with some osp world rank based color
+	// changing. So the osp rank should be the hue, and the color id should
+	// be the value
 	const std::array<float, 3> atom_color = {
 		static_cast<float>(world_rank) / world_size,
 		static_cast<float>(world_rank) / world_size,
@@ -120,8 +129,8 @@ void ospray_rendering_work(MPI_Comm partition_comm) {
 	// Make the OSPData which will refer to our particle and color data.
 	// The OSP_DATA_SHARED_BUFFER flag tells OSPRay not to share our buffer,
 	// instead of taking a copy.
-	OSPData sphere_data = ospNewData(atoms.size() * sizeof(Particle), OSP_CHAR,
-			atoms.data(), OSP_DATA_SHARED_BUFFER);
+	OSPData sphere_data = ospNewData(collected_particles.size() * sizeof(Particle), OSP_CHAR,
+			collected_particles.data(), OSP_DATA_SHARED_BUFFER);
 	ospCommit(sphere_data);
 	OSPData color_data = ospNewData(1, OSP_FLOAT3,
 			atom_color.data(), OSP_DATA_SHARED_BUFFER);
