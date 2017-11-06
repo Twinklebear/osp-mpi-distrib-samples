@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include <vector>
 #include <cassert>
 #include <iostream>
@@ -99,9 +100,12 @@ void ospray_rendering_work(MPI_Comm partition_comm, std::vector<Particle> &colle
 		std::cout << "OSPRay partition has " << world_size << " ranks\n";
 	}
 	{
+		char host_name[1024] = {0};
+		gethostname(host_name, 1023);
 		int global_rank;
 		MPI_Comm_rank(MPI_COMM_WORLD, &global_rank); 
-		std::cout << "global_rank " << global_rank << " is " << world_rank
+		std::cout << "global_rank " << global_rank << " on host '"
+			<< host_name << "' is " << world_rank
 			<< " in OSPRay partition" << std::endl;
 	}
 
