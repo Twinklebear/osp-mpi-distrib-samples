@@ -22,7 +22,7 @@ Once you've unzipped the dependencies and built OSPRay you can make a build dire
 in the repo and run cmake and make the samples. If you built OSPRay you'll also
 need to point it to your Embree and TBB libraries.
 
-```
+```bash
 mkdir build
 cd build
 cmake .. -Dospray_DIR=<path to ospray>/lib/cmake/ospray-<version> \
@@ -37,7 +37,7 @@ Make sure Embree and TBB are in your `LD_LIBRARY_PATH`, either manually
 or by sourcing the `embree-vars.sh` and `tbbvars.sh` scripts included with
 the libraries. Then you can run the samples with MPI and view the output images.
 
-```
+```bash
 mpirun -np <N> ./simple/simple
 mpirun -np <N> ./regions/regions
 ```
