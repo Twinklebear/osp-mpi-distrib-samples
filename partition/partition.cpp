@@ -224,7 +224,7 @@ void ospray_rendering_work(MPI_Comm partition_comm, std::vector<Particle> &colle
 	}
 
 	// Clean up all our objects
-	ospFreeFrameBuffer(framebuffer);
+	ospRelease(framebuffer);
 	ospRelease(renderer);
 	ospRelease(camera);
 	ospRelease(model);
