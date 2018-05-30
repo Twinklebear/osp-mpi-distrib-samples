@@ -229,6 +229,7 @@ void ospray_rendering_work(MPI_Comm partition_comm, std::vector<Particle> &colle
 	ospRelease(camera);
 	ospRelease(model);
 	ospRelease(spheres);
+	ospShutdown();
 }
 void write_ppm(const std::string &file_name, const int width, const int height,
 		const uint32_t *img)

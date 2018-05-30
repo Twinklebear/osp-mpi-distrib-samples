@@ -129,6 +129,7 @@ int main(int argc, char **argv) {
 	ospRelease(camera);
 	ospRelease(model);
 	ospRelease(spheres);
+	ospShutdown();
 
 	MPI_Finalize();
 
