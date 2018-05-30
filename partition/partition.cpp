@@ -64,9 +64,6 @@ int main(int argc, char **argv) {
 	int world_rank, world_size;
 	MPI_Comm_rank(MPI_COMM_WORLD, &world_rank); 
 	MPI_Comm_size(MPI_COMM_WORLD, &world_size); 
-	if (ospLoadModule("mpi") != OSP_NO_ERROR) {
-		throw std::runtime_error("Failed to load OSPRay MPI module");
-	}
 
 	// Determine how many ranks we have on each node, so we can assign one
 	// to be the OSPRay rank
@@ -94,6 +91,9 @@ int main(int argc, char **argv) {
 			<< " configuring to run OSPRay on one rank per-node\n";
 	}
 	is_ospray_rank = node_rank == 0 ? 1 : 0;
+
+	std::cout << "Rank " << world_rank << (is_ospray_rank ? " is" : " is not")
+		<< " an OSPRay rank\n";
 
 	// Collect all particles to the rank responsible for rendering with OSPRay.
 	// Here node_rank 0 collects data from the other nodes on the rank
@@ -126,6 +126,9 @@ int main(int argc, char **argv) {
 void ospray_rendering_work(MPI_Comm partition_comm, std::vector<Particle> &collected_particles,
 		const int node_size)
 {
+	if (ospLoadModule("mpi") != OSP_NO_ERROR) {
+		throw std::runtime_error("Failed to load OSPRay MPI module");
+	}
 	int world_size, world_rank;
 	MPI_Comm_size(partition_comm, &world_size);
 	MPI_Comm_rank(partition_comm, &world_rank);
