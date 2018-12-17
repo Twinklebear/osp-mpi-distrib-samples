@@ -98,12 +98,11 @@ int main(int argc, char **argv) {
 	OSPModel model = ospNewModel();
 	ospAddVolume(model, volume);
 
-	// For correct compositing we must specify a list of regions that bound the
-	// data owned by this rank. These region bounds will be used for sort-last
-	// compositing when rendering.
 	const box3f bounds(grid_origin, grid_origin + vec3f(volume_dims));
-	OSPData region_data = ospNewData(2, OSP_FLOAT3, &bounds);
-	ospSetData(model, "regions", region_data);
+	// If we don't need to adjust the bounds of the data on each node to
+	// clip off ghost zones, we don't need to set the region.lower or upper
+	// parameters
+	ospSet1i(model, "id", rank);
 
 	// Generate some particles within our region
 	std::random_device rd;
