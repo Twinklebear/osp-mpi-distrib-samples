@@ -44,10 +44,10 @@ mpirun -np <N> ./regions/regions
 
 Running the simple example will render some particle data, with 4 ranks
 you should see something like this:
-![simple example, 4 ranks](https://i.imgur.com/3QaakE6.png)
+![simple example, 4 ranks](https://i.imgur.com/8E9AGQr.jpg)
 
 Running the regions example will render mixed particle and volume data,
 with 4 ranks you should something like this:
 
-![regions example, 4 ranks](https://i.imgur.com/F1CxiSm.png)
+![regions example, 4 ranks](https://i.imgur.com/GhB36t1.jpg)
 
