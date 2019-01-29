@@ -187,6 +187,10 @@ void ospray_rendering_work(MPI_Comm partition_comm, std::vector<Particle> &colle
 	// For distributed rendering we must use the MPI raycaster
 	OSPRenderer renderer = ospNewRenderer("mpi_raycast");
 
+	OSPMaterial material = ospNewMaterial2("scivis", "OBJMaterial");
+	ospSetVec3f(material, "Ks", osp::vec3f{0.8, 0.8, 0.8});
+	ospCommit(material);
+
 	// Create the sphere geometry that we'll use to represent our particles
 	OSPGeometry spheres = ospNewGeometry("spheres");
 	ospSetData(spheres, "spheres", sphere_data);
@@ -194,6 +198,7 @@ void ospray_rendering_work(MPI_Comm partition_comm, std::vector<Particle> &colle
 	ospSet1f(spheres, "radius", radius);
 	ospSet1i(spheres, "bytes_per_sphere", sizeof(Particle));
 	ospSet1i(spheres, "offset_colorID", sizeof(osp::vec3f));
+	ospSetMaterial(spheres, material);
 	ospCommit(spheres);
 
 	// Create the model we'll place all our scene geometry into, representing
@@ -223,11 +228,24 @@ void ospray_rendering_work(MPI_Comm partition_comm, std::vector<Particle> &colle
 	ospSet3fv(camera, "dir", &cam_dir.x);
 	ospCommit(camera);
 
+	OSPLight ambientLight = ospNewLight3("ambient");
+	ospSet1f(ambientLight, "intensity", 0.5f);
+	ospCommit(ambientLight);
+	OSPLight distantLight = ospNewLight3("distant");
+	ospSetVec3f(distantLight, "direction",
+			osp::vec3f{cam_dir.x + 1.f, cam_dir.y, cam_dir.z});
+	ospCommit(distantLight);
+
+	std::array<OSPObject, 2> lights = {distantLight, ambientLight};
+	OSPData lightData = ospNewData(2, OSP_OBJECT, lights.data());
+	ospCommit(lightData);
+
 	// Setup the parameters for the renderer
 	ospSet1i(renderer, "spp", 1);
 	ospSet1f(renderer, "bgColor", 1.f);
 	ospSetObject(renderer, "model", model);
 	ospSetObject(renderer, "camera", camera);
+	ospSetData(renderer, "lights", lightData);
 	ospCommit(renderer);
 
 	// Create a framebuffer to render the image too
